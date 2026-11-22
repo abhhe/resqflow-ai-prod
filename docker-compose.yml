@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  resqflow-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - JWT_SECRET=resqflow_secret_production_key_2026
+    restart: always

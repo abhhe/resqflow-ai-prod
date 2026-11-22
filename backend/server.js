@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 const connectDB = require('./src/config/db');
 const { errorHandler, notFound } = require('./src/middleware/error');
 
@@ -16,12 +17,29 @@ const app = express();
 const server = http.createServer(app);
 
 const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : 'http://localhost:5173';
-const allowedOrigins = [frontendUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+
+const isOriginAllowed = (origin, callback) => {
+  // Allow requests with no origin (like mobile apps, curl, or same-origin static files)
+  if (!origin) return callback(null, true);
+  if (
+    origin === frontendUrl ||
+    origin === 'http://localhost:5173' ||
+    origin === 'http://127.0.0.1:5173' ||
+    origin === 'http://localhost:5000' ||
+    origin.endsWith('.vercel.app') ||
+    origin.endsWith('.netlify.app') ||
+    origin.endsWith('.onrender.com') ||
+    process.env.NODE_ENV !== 'production'
+  ) {
+    return callback(null, true);
+  }
+  return callback(null, true); // Fallback: allow for demo / client environments
+};
 
 // Socket.io initialization
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: isOriginAllowed,
     methods: ['GET', 'POST', 'PATCH'],
     credentials: true
   }
@@ -34,9 +52,12 @@ app.use((req, res, next) => {
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 app.use(cors({
-  origin: allowedOrigins,
+  origin: isOriginAllowed,
   credentials: true
 }));
 app.use(express.json());
@@ -106,6 +127,18 @@ app.get('/api/historical', async (req, res) => {
     res.status(200).json({ success: true, count: history.length, data: history });
   } catch (err) { res.status(500).json({ success: false }); }
 });
+
+// Serve frontend static files if built (unified deployment / production)
+const frontendDist = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+      return res.sendFile(path.join(frontendDist, 'index.html'));
+    }
+    next();
+  });
+}
 
 // Error handling middleware
 app.use(notFound);

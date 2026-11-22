@@ -13,8 +13,6 @@ export default function HospitalManagementModal({ isOpen, onClose, hospitals = [
   const [hospitalForecast, setHospitalForecast] = useState(null);
   const [loadingForecast, setLoadingForecast] = useState(false);
 
-  if (!isOpen) return null;
-
   // 1. Compute 5 Overview Metrics
   const totalHospitals = hospitals.length;
   const availableHospitals = hospitals.filter(h => h.status === 'AVAILABLE' || !h.status).length;
@@ -45,7 +43,7 @@ export default function HospitalManagementModal({ isOpen, onClose, hospitals = [
 
   // Fetch Time-Series ICU Forecast for Active Hospital
   useEffect(() => {
-    if (!activeHospital) return;
+    if (!isOpen || !activeHospital) return;
     const hospId = activeHospital.hospitalId || activeHospital._id || activeHospital.id;
     if (!hospId) return;
 
@@ -65,7 +63,9 @@ export default function HospitalManagementModal({ isOpen, onClose, hospitals = [
       });
 
     return () => { mounted = false; };
-  }, [activeHospital?.hospitalId, activeHospital?._id]);
+  }, [isOpen, activeHospital?.hospitalId, activeHospital?._id]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">

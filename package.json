@@ -1,0 +1,13 @@
+{
+  "name": "resqflow-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ResQFlow AI — Intelligent Real-Time Emergency Coordination and Dynamic Resource Allocation Platform",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "start": "node backend/server.js",
+    "dev": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "test": "npm --prefix backend test"
+  }
+}
